@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import lombok.extern.slf4j.Slf4j;
 import tacos.Order;
@@ -23,10 +25,13 @@ import org.springframework.validation.Errors;
 @SessionAttributes("order")
 public class OrderController {
 	
+	private OrderProps props;
+	
 	private OrderRepository orderRepo;
 	
-	public OrderController(OrderRepository orderRepo) {
+	public OrderController(OrderRepository orderRepo, OrderProps props) {
 		this.orderRepo = orderRepo;
+		this.props = props;
 	}
 	
 	@GetMapping("/current")
@@ -63,5 +68,15 @@ public class OrderController {
 		sessionStatus.setComplete();
 		
 		return "redirect:/";
+	}
+	
+	@GetMapping
+	public String ordersForUser(@AuthenticationPrincipal User user, Model model) {
+		
+		Pageable pageable = PageRequest.of(0, props.getPageSize());
+//		Pageable pageable = PageRequest.of(0, pageSize);
+		model.addAttribute("orders",
+				orderRepo.findByUserOrderByPlacedAtDesc(user, pageable));
+		return "orderList";
 	}
 }
